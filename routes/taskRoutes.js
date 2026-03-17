@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Task = require("../models/Task");
 
-// 1. CREATE: Assign a new task
+// 1. CREATE: Assign a new task (Kept original)
 router.post("/", async (req, res) => {
   try {
     const { internId, taskName, description, assignDate, deadline } = req.body;
@@ -21,11 +21,11 @@ router.post("/", async (req, res) => {
   }
 });
 
-// 2. READ: Get all tasks (Populated with Intern names for the table)
+// 2. READ: Get all tasks (Kept original)
 router.get("/", async (req, res) => {
   try {
     const tasks = await Task.find()
-      .populate("internId", "name") // Gets intern name for the 'Assigned Intern' column
+      .populate("internId", "name")
       .sort({ createdAt: -1 });
     res.status(200).json(tasks);
   } catch (error) {
@@ -33,14 +33,20 @@ router.get("/", async (req, res) => {
   }
 });
 
-// 3. UPDATE: Change Task Status (Required for your editable dropdown)
+// 3. UPDATE: Change Task Status AND Deadline (Updated logic)
 router.put("/:id", async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, deadline } = req.body; // Added deadline to request body destruction
+    
+    // This object will only update the fields provided in req.body
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (deadline) updateData.deadline = deadline;
+
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
-      { status },
-      { new: true } // Returns the updated document
+      updateData, // Pass the dynamic update object
+      { new: true } 
     );
     
     if (!updatedTask) {
@@ -50,11 +56,11 @@ router.put("/:id", async (req, res) => {
     res.status(200).json(updatedTask);
   } catch (error) {
     console.error("Update error:", error);
-    res.status(500).json({ message: "Server error: Could not update status" });
+    res.status(500).json({ message: "Server error: Could not update task" });
   }
 });
 
-// 4. DELETE: Remove a task
+// 4. DELETE: Remove a task (Kept original)
 router.delete("/:id", async (req, res) => {
   try {
     await Task.findByIdAndDelete(req.params.id);

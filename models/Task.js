@@ -1,47 +1,73 @@
-const mongoose = require("mongoose");
+const express = require("express");
+const router = express.Router();
+const Task = require("../models/Task");
 
-/**
- * Task Schema
- * Handles the storage of tasks assigned by mentors to specific interns.
- * Date format is strictly kept as DD-MM-YYYY for frontend display consistency.
- */
-const taskSchema = new mongoose.Schema({
-  internId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Intern", 
-    required: [true, "Intern ID is required to assign a task"] 
-  },
-  taskName: { 
-    type: String, 
-    required: [true, "Task title is required"],
-    trim: true 
-  },
-  description: { 
-    type: String, 
-    required: [true, "Task description is required"] 
-  },
-  assignDate: { 
-    type: String, 
-    required: [true, "Assignment date is required"] 
-    // Format: DD-MM-YYYY
-  },
-  deadline: { 
-    type: String, 
-    required: [true, "Deadline date is required"] 
-    // Format: DD-MM-YYYY
-  },
-  status: { 
-    type: String, 
-    enum: ["Pending", "Active", "Completed", "Expired", "Reviewing"],
-    default: "Pending" 
-  },
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
+// 1. CREATE: Assign a new task (Kept original)
+router.post("/", async (req, res) => {
+  try {
+    const { internId, taskName, description, assignDate, deadline } = req.body;
+    const newTask = new Task({
+      internId,
+      taskName,
+      description,
+      assignDate,
+      deadline,
+      status: "Pending"
+    });
+    await newTask.save();
+    res.status(201).json({ message: "Task assigned and saved successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error: Could not save task" });
   }
-}, {
-  timestamps: true // Automatically creates 'updatedAt' fields
 });
 
-// Export the model
-module.exports = mongoose.model("Task", taskSchema);
+// 2. READ: Get all tasks (Kept original)
+router.get("/", async (req, res) => {
+  try {
+    const tasks = await Task.find()
+      .populate("internId", "name")
+      .sort({ createdAt: -1 });
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching tasks" });
+  }
+});
+
+// 3. UPDATE: Change Task Status AND Deadline (Updated logic)
+router.put("/:id", async (req, res) => {
+  try {
+    const { status, deadline } = req.body; // Added deadline to request body destruction
+    
+    // This object will only update the fields provided in req.body
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (deadline) updateData.deadline = deadline;
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      req.params.id,
+      updateData, // Pass the dynamic update object
+      { new: true } 
+    );
+    
+    if (!updatedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).json({ message: "Server error: Could not update task" });
+  }
+});
+
+// 4. DELETE: Remove a task (Kept original)
+router.delete("/:id", async (req, res) => {
+  try {
+    await Task.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Task deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error: Could not delete task" });
+  }
+});
+
+module.exports = router;
