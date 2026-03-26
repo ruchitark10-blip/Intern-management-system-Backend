@@ -3,6 +3,7 @@ const router = express.Router();
 
 const User = require("../models/User");
 const Intern = require("../models/Intern");
+const Mentor = require("../models/Mentor");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -11,6 +12,7 @@ router.post("/login", async (req, res) => {
   try {
 
     const { email, password } = req.body;
+    
 
     if (!email || !password) {
       return res.status(400).json({
@@ -36,7 +38,13 @@ router.post("/login", async (req, res) => {
         role = "intern";
       }
     }
+     if (!user) {
+  user = await Mentor.findOne({ email });
 
+  if (user) {
+    role = "mentor";
+  }
+}
     // 3️⃣ If still not found
     if (!user) {
       return res.status(404).json({
