@@ -8,35 +8,20 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const sendCredentialsEmail = async (email, password, role) => {
+const sendEmail = async (to, subject, html) => {
   try {
-
-    const mailOptions = {
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Internship Portal Login Credentials",
-      html: `
-        <h2>Welcome to Internship Portal</h2>
+      to,
+      subject,
+      html
+    });
 
-        <p>Your account has been created successfully.</p>
+    console.log("Email sent to:", to);
 
-        <p><b>Role:</b> ${role}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Password:</b> ${password}</p>
-
-        <p>Please login and change your password.</p>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    console.log("Email sent successfully to:", email);
-
-  } catch (error) {
-
-    console.error("Email sending failed:", error);
-
+  } catch (err) {
+    console.error("Email error:", err);
   }
 };
 
-module.exports = sendCredentialsEmail;
+module.exports = sendEmail;
