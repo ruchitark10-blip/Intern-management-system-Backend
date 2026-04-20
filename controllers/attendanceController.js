@@ -4,7 +4,10 @@ exports.checkIn = async (req, res) => {
   try {
     const { name, email } = req.body;
 
-    const today = new Date().toISOString().split("T")[0];
+    // ✅ IST DATE (FINAL FIX)
+    const today = new Date().toLocaleDateString("en-CA", {
+      timeZone: "Asia/Kolkata",
+    });
 
     const exist = await Attendance.findOne({ email, date: today });
 
