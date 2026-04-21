@@ -1,16 +1,27 @@
 const express = require("express");
 const router = express.Router();
 
-const { checkIn } = require("../controllers/attendanceController");
-const Attendance = require("../models/attendanceModel");
+// ✅ IMPORT CONTROLLER FUNCTIONS
+const {
+  checkIn,
+  checkOut,
+} = require("../controllers/attendanceController");
 
-// check-in only
+// ================= CHECK-IN =================
 router.post("/check-in", checkIn);
 
-// get all attendance
+// ================= CHECK-OUT =================
+router.post("/check-out", checkOut);
+
+// ================= GET ALL =================
 router.get("/", async (req, res) => {
-  const data = await Attendance.find();
-  res.json(data);
+  try {
+    const Attendance = require("../models/attendanceModel"); // ✅ FIXED PATH
+    const data = await Attendance.find();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;
