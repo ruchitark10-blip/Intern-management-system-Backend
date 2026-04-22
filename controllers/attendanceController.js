@@ -1,11 +1,20 @@
 const Attendance = require("../models/attendanceModel");
 
+// ===================== FORMAT DATE SAFE =====================
+const formatDate = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 // ===================== CHECK IN =====================
 exports.checkIn = async (req, res) => {
   try {
     const { name, email, date } = req.body;
 
-    const today = date;
+    const today = formatDate(date);
 
     const exist = await Attendance.findOne({ email, date: today });
 
@@ -33,7 +42,9 @@ exports.checkOut = async (req, res) => {
   try {
     const { email, date } = req.body;
 
-    const attendance = await Attendance.findOne({ email, date });
+    const today = formatDate(date);
+
+    const attendance = await Attendance.findOne({ email, date: today });
 
     if (!attendance) {
       return res.status(404).json({ message: "No check-in found" });
