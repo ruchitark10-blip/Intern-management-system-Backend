@@ -5,9 +5,10 @@ const attendanceSchema = new mongoose.Schema({
   email: String,
   date: String,
   checkIn: Date,
+  checkOut: Date,
 });
 
-// ✅ ONLY VALID RULE
+// prevent duplicate check-in per day
 attendanceSchema.index({ email: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model("Attendance", attendanceSchema);
