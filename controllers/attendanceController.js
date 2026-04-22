@@ -15,6 +15,15 @@ exports.checkIn = async (req, res) => {
     const { name, email, date } = req.body;
 
     const today = formatDate(date);
+    const now = new Date();
+    const hour = now.getHours();
+
+    // ✅ ONLY 9 AM - 10 AM
+    if (hour < 9 || hour >= 10) {
+      return res.status(400).json({
+        message: "Punch In allowed only between 9 AM to 10 AM",
+      });
+    }
 
     const exist = await Attendance.findOne({ email, date: today });
 
@@ -28,7 +37,7 @@ exports.checkIn = async (req, res) => {
       name,
       email,
       date: today,
-      checkIn: new Date(),
+      checkIn: now,
     });
 
     res.json({ message: "Check-in successful" });
@@ -55,19 +64,27 @@ exports.checkOut = async (req, res) => {
     }
 
     const now = new Date();
-    const hour = now.getHours();
 
-    // allow only 5–7 PM
-    if (hour < 17 || hour > 19) {
+    // ===================== 8 HOUR RULE =====================
+    const checkInTime = new Date(attendance.checkIn);
+    const diffHours = (now - checkInTime) / (1000 * 60 * 60);
+
+    if (diffHours < 8) {
+      const remaining = (8 - diffHours).toFixed(2);
+
       return res.status(400).json({
-        message: "Check-out allowed only between 5 PM and 7 PM",
+        message: `Punch Out allowed after ${remaining} hours`,
       });
     }
 
+    // ❌ NO AUTO LOGIC — ONLY MANUAL SAVE
     attendance.checkOut = now;
     await attendance.save();
 
-    res.json({ message: "Check-out successful" });
+    res.json({
+      message: "Check-out successful",
+      checkOutTime: now,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
