@@ -1,36 +1,30 @@
 const Attendance = require("../models/attendanceModel");
 
-// ===================== FORMAT DATE =====================
+// ================= FORMAT DATE =================
 const formatDate = (date) => {
-  const d = new Date(date);
-  return d.toISOString().split("T")[0];
+  return new Date(date).toISOString().split("T")[0];
 };
 
-// ===================== FIXED IST TIME =====================
-const getISTTime = () => {
-  const now = new Date();
-
-  // IST = UTC + 5:30
-  const istOffset = 5.5 * 60 * 60 * 1000;
-
-  return new Date(now.getTime() + istOffset);
+// ================= GET IST HOUR =================
+const getISTHour = () => {
+  return parseInt(
+    new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "numeric",
+      hour12: false,
+    }).format(new Date())
+  );
 };
 
-// ===================== CHECK IN (9–10 AM) =====================
+// ================= CHECK IN =================
 exports.checkIn = async (req, res) => {
   try {
     const { name, email, date } = req.body;
 
     const today = formatDate(date);
-    const now = getISTTime();
-    const hour = now.getHours();
+    const now = new Date(); // ✅ store UTC
+    const hour = getISTHour(); // ✅ IST check
 
-    // 🔍 DEBUG (check in terminal)
-    console.log("Server Time:", new Date());
-    console.log("IST Time:", now);
-    console.log("Hour:", hour);
-
-    // ✅ Only between 9:00–9:59 AM
     if (hour < 9 || hour >= 10) {
       return res.status(400).json({
         message: "Check-in allowed only between 9 AM to 10 AM",
@@ -61,7 +55,7 @@ exports.checkIn = async (req, res) => {
   }
 };
 
-// ===================== CHECK OUT (6–7 PM) =====================
+// ================= CHECK OUT =================
 exports.checkOut = async (req, res) => {
   try {
     const { email, date } = req.body;
@@ -71,7 +65,7 @@ exports.checkOut = async (req, res) => {
 
     if (!attendance) {
       return res.status(404).json({
-        message: "No check-in found for today",
+        message: "No check-in found",
       });
     }
 
@@ -81,14 +75,9 @@ exports.checkOut = async (req, res) => {
       });
     }
 
-    const now = getISTTime();
-    const hour = now.getHours();
+    const now = new Date();
+    const hour = getISTHour();
 
-    // 🔍 DEBUG
-    console.log("IST Time:", now);
-    console.log("Hour:", hour);
-
-    // ✅ Only between 6:00–6:59 PM
     if (hour < 18 || hour >= 19) {
       return res.status(400).json({
         message: "Check-out allowed only between 6 PM to 7 PM",
@@ -106,13 +95,10 @@ exports.checkOut = async (req, res) => {
   }
 };
 
-// ===================== GET ATTENDANCE =====================
+// ================= GET BY EMAIL =================
 exports.getAttendanceByEmail = async (req, res) => {
   try {
-    const data = await Attendance.find({
-      email: req.params.email,
-    }).sort({ date: -1 });
-
+    const data = await Attendance.find({ email: req.params.email }).sort({ date: -1 });
     res.json(data);
   } catch (err) {
     res.status(500).json({ message: err.message });
